@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard – TaskFlow</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}"/>
+  <link rel="stylesheet" th:href="@{/css/dashboard.css}"/>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="navbar-brand">
+    <span class="menu-icon">☰</span>
+    TaskFlow
+  </div>
+  <div class="navbar-right">
+    <span>Bienvenido, <strong th:text="${user.displayName}">Usuario</strong>!</span>
+    <form th:action="@{/auth/logout}" method="post" style="margin:0">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <button type="submit" class="btn btn-secondary btn-sm">Cerrar Sesión</button>
+    </form>
+  </div>
+</nav>
+
+<!-- CONTENT -->
+<div class="main-content">
+
+  <!-- Alerts -->
+  <div th:if="${successMsg}" class="alert alert-success" th:text="${successMsg}"></div>
+  <div th:if="${errorMsg}" class="alert alert-danger" th:text="${errorMsg}"></div>
+
+  <!-- Header -->
+  <div class="page-header">
+    <h1 class="page-title">Tus Proyectos</h1>
+    <button class="btn btn-primary" onclick="openModal('newProjectModal')">
+      + Nuevo Proyecto
+    </button>
+  </div>
+
+  <!-- Projects grid -->
+  <div class="projects-grid" th:if="${!projects.isEmpty()}">
+
+    <th:block th:each="project : ${projects}">
+      <!-- Project card -->
+      <div class="project-card" style="cursor:default;">
+
+        <!-- Actions (edit/delete) -->
+        <div class="project-card-actions">
+          <button class="project-action-btn"
+                  th:onclick="'openEditProject(' + ${project.id} + ', \'' + ${#strings.escapeXml(project.name)} + '\', \'' + ${#strings.escapeXml(project.description)} + '\')'">
+            ✏️
+          </button>
+          <form th:id="'deleteProject-' + ${project.id}"
+                th:action="@{/dashboard/projects/{id}/delete(id=${project.id})}"
+                method="post" style="display:inline">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <button type="button"
+                    class="project-action-btn delete"
+                    th:onclick="'confirmDelete(\'deleteProject-' + ${project.id} + '\')'">
+              🗑️
+            </button>
+          </form>
+        </div>
+
+        <!-- Card link -->
+        <a th:href="@{/projects/{id}(id=${project.id})}" class="project-card-name"
+           style="display:block; text-decoration:none; color:inherit;">
+          <span th:text="${project.name}">Proyecto</span>
+        </a>
+
+        <div class="project-stat">
+          <span class="stat-number" th:text="${project.totalTasks}">0</span>
+          <span class="project-stat-label">Tareas</span>
+        </div>
+
+        <div class="project-stat" th:if="${project.getTasksByStatus(T(com.taskflow.model.TaskStatus).IN_PROGRESS) > 0}">
+          <span class="stat-number orange" th:text="${project.getTasksByStatus(T(com.taskflow.model.TaskStatus).IN_PROGRESS)}">0</span>
+          <span class="project-stat-label">en progreso</span>
+        </div>
+
+        <div class="project-stat" th:if="${project.getTasksByStatus(T(com.taskflow.model.TaskStatus).DONE) > 0}">
+          <span class="stat-number blue" th:text="${project.getTasksByStatus(T(com.taskflow.model.TaskStatus).DONE)}">0</span>
+          <span class="project-stat-label">completadas</span>
+        </div>
+
+        <div class="project-stat" th:if="${project.getTasksByStatus(T(com.taskflow.model.TaskStatus).TODO) > 0}">
+          <span class="stat-number" th:text="${project.getTasksByStatus(T(com.taskflow.model.TaskStatus).TODO)}">0</span>
+          <span class="project-stat-label">pendientes</span>
+        </div>
+
+        <!-- Mini progress bar -->
+        <div class="stats-bar" th:if="${project.totalTasks > 0}">
+          <div class="stats-bar-segment todo"
+               th:style="'width:' + ${(project.getTasksByStatus(T(com.taskflow.model.TaskStatus).TODO) * 100 / project.totalTasks)} + '%'"></div>
+          <div class="stats-bar-segment inprogress"
+               th:style="'width:' + ${(project.getTasksByStatus(T(com.taskflow.model.TaskStatus).IN_PROGRESS) * 100 / project.totalTasks)} + '%'"></div>
+          <div class="stats-bar-segment done"
+               th:style="'width:' + ${(project.getTasksByStatus(T(com.taskflow.model.TaskStatus).DONE) * 100 / project.totalTasks)} + '%'"></div>
+        </div>
+
+      </div>
+    </th:block>
+
+    <!-- New project button card -->
+    <div class="project-card-new" onclick="openModal('newProjectModal')">
+      <span style="font-size:1.3rem;">+</span>
+      Nuevo Proyecto
+    </div>
+
+  </div>
+
+  <!-- Empty state -->
+  <div class="empty-state" th:if="${projects.isEmpty()}">
+    <div class="empty-icon">📁</div>
+    <p>Aún no tienes proyectos.<br>¡Crea el primero haciendo clic en "Nuevo Proyecto"!</p>
+  </div>
+
+</div>
+
+<!-- ===== MODAL: NEW PROJECT ===== -->
+<div class="modal-backdrop" id="newProjectModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Nuevo Proyecto</span>
+      <button class="modal-close" onclick="closeModal('newProjectModal')">✕</button>
+    </div>
+    <form th:action="@{/dashboard/projects/new}" method="post">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <div class="form-group">
+        <label class="form-label">Nombre del proyecto *</label>
+        <input type="text" name="name" class="form-control" placeholder="Ej: Proyecto A" required maxlength="100"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descripción (opcional)</label>
+        <textarea name="description" class="form-control" placeholder="Describe brevemente el proyecto..." maxlength="500"></textarea>
+      </div>
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:8px;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('newProjectModal')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Crear Proyecto</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== MODAL: EDIT PROJECT ===== -->
+<div class="modal-backdrop" id="editProjectModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Editar Proyecto</span>
+      <button class="modal-close" onclick="closeModal('editProjectModal')">✕</button>
+    </div>
+    <form id="editProjectForm" method="post">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <div class="form-group">
+        <label class="form-label">Nombre del proyecto *</label>
+        <input type="text" id="editProjectName" name="name" class="form-control" required maxlength="100"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descripción</label>
+        <textarea id="editProjectDesc" name="description" class="form-control" maxlength="500"></textarea>
+      </div>
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:8px;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('editProjectModal')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script th:src="@{/js/app.js}"></script>
+<script>
+function openEditProject(id, name, description) {
+  document.getElementById('editProjectName').value = name;
+  document.getElementById('editProjectDesc').value = description;
+  document.getElementById('editProjectForm').action = '/dashboard/projects/' + id + '/edit';
+  openModal('editProjectModal');
+}
+</script>
+</body>
+</html>

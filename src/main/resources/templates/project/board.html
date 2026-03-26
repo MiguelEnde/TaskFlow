@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title th:text="${project.name} + ' – TaskFlow'">Proyecto – TaskFlow</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}"/>
+  <link rel="stylesheet" th:href="@{/css/board.css}"/>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="navbar-brand">
+    <span class="menu-icon">☰</span>
+    <span th:text="${project.name}">Proyecto</span>
+  </div>
+  <div class="navbar-right">
+    <a th:href="@{/dashboard}" class="btn btn-secondary btn-sm">← Dashboard</a>
+  </div>
+</nav>
+
+<!-- CONTENT -->
+<div class="main-content">
+
+  <!-- Alerts -->
+  <div th:if="${successMsg}" class="alert alert-success" th:text="${successMsg}"></div>
+
+  <!-- Kanban Board -->
+  <div class="board-container">
+
+    <!-- ===== COLUMNA: POR HACER ===== -->
+    <div class="kanban-column">
+      <div class="kanban-column-header todo">
+        <div class="column-icon"></div>
+        Por Hacer
+        <span class="column-count" th:text="${todoTasks.size()}">0</span>
+      </div>
+
+      <div class="kanban-tasks">
+        <div th:each="task : ${todoTasks}" class="task-card">
+          <div class="task-card-header">
+            <span class="task-title" th:text="${task.title}">Tarea</span>
+            <div class="task-dropdown">
+              <button class="task-menu-btn" type="button">•••</button>
+              <div class="task-dropdown-menu">
+                <button class="task-dropdown-item"
+                        th:onclick="'openEditTask(' + ${task.id} + ',' + ${project.id} + ',\'' + ${#strings.escapeXml(task.title)} + '\',\'' + ${#strings.escapeXml(task.description)} + '\',\'' + ${task.status} + '\',\'' + ${task.priority} + '\')'">
+                  ✏️ Editar
+                </button>
+                <form th:id="'delTask-' + ${task.id}"
+                      th:action="@{/projects/{pid}/tasks/{tid}/delete(pid=${project.id},tid=${task.id})}"
+                      method="post">
+                  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                  <button type="button" class="task-dropdown-item danger"
+                          th:onclick="'confirmDelete(\'delTask-' + ${task.id} + '\')'">
+                    🗑️ Eliminar
+                  </button>
+                </form>
+                <!-- Quick move to In Progress -->
+                <form th:action="@{/projects/{pid}/tasks/{tid}/status(pid=${project.id},tid=${task.id})}" method="post">
+                  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                  <input type="hidden" name="status" value="IN_PROGRESS"/>
+                  <button type="submit" class="task-dropdown-item">▶️ Mover a En Proceso</button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <p class="task-desc" th:if="${!task.description.isEmpty()}" th:text="${task.description}"></p>
+
+          <div class="task-footer">
+            <span class="badge"
+                  th:classappend="${task.priority.name() == 'HIGH' ? 'badge-high' : (task.priority.name() == 'MEDIUM' ? 'badge-medium' : 'badge-low')}"
+                  th:text="${task.priority.displayName} + ' Prioridad'">Media</span>
+          </div>
+        </div>
+
+        <div th:if="${todoTasks.isEmpty()}" style="text-align:center; padding:20px 0; color:var(--text-muted); font-size:0.85rem;">
+          Sin tareas
+        </div>
+      </div>
+
+      <button class="add-task-btn" onclick="openAddTask('TODO')">+ Añadir Tarea</button>
+    </div>
+
+    <!-- ===== COLUMNA: EN PROCESO ===== -->
+    <div class="kanban-column">
+      <div class="kanban-column-header inprogress">
+        <div class="column-icon"></div>
+        En Proceso
+        <span class="column-count" th:text="${inProgressTasks.size()}">0</span>
+      </div>
+
+      <div class="kanban-tasks">
+        <div th:each="task : ${inProgressTasks}" class="task-card">
+          <div class="task-card-header">
+            <span class="task-title" th:text="${task.title}">Tarea</span>
+            <div class="task-dropdown">
+              <button class="task-menu-btn" type="button">•••</button>
+              <div class="task-dropdown-menu">
+                <button class="task-dropdown-item"
+                        th:onclick="'openEditTask(' + ${task.id} + ',' + ${project.id} + ',\'' + ${#strings.escapeXml(task.title)} + '\',\'' + ${#strings.escapeXml(task.description)} + '\',\'' + ${task.status} + '\',\'' + ${task.priority} + '\')'">
+                  ✏️ Editar
+                </button>
+                <form th:id="'delTask-' + ${task.id}"
+                      th:action="@{/projects/{pid}/tasks/{tid}/delete(pid=${project.id},tid=${task.id})}"
+                      method="post">
+                  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                  <button type="button" class="task-dropdown-item danger"
+                          th:onclick="'confirmDelete(\'delTask-' + ${task.id} + '\')'">
+                    🗑️ Eliminar
+                  </button>
+                </form>
+                <form th:action="@{/projects/{pid}/tasks/{tid}/status(pid=${project.id},tid=${task.id})}" method="post">
+                  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                  <input type="hidden" name="status" value="DONE"/>
+                  <button type="submit" class="task-dropdown-item">✅ Marcar Completado</button>
+                </form>
+                <form th:action="@{/projects/{pid}/tasks/{tid}/status(pid=${project.id},tid=${task.id})}" method="post">
+                  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                  <input type="hidden" name="status" value="TODO"/>
+                  <button type="submit" class="task-dropdown-item">↩️ Volver a Por Hacer</button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <p class="task-desc" th:if="${!task.description.isEmpty()}" th:text="${task.description}"></p>
+
+          <div class="task-footer">
+            <span class="badge badge-high" th:if="${task.priority.name() == 'HIGH'}">Alta Prioridad</span>
+            <span class="badge badge-medium" th:if="${task.priority.name() == 'MEDIUM'}">Media Prioridad</span>
+            <span class="badge badge-low" th:if="${task.priority.name() == 'LOW'}">Baja Prioridad</span>
+            <span class="priority-star" th:if="${task.priority.name() == 'HIGH'}">★</span>
+          </div>
+        </div>
+
+        <div th:if="${inProgressTasks.isEmpty()}" style="text-align:center; padding:20px 0; color:var(--text-muted); font-size:0.85rem;">
+          Sin tareas
+        </div>
+      </div>
+
+      <button class="add-task-btn" onclick="openAddTask('IN_PROGRESS')">+ Añadir Tarea</button>
+    </div>
+
+    <!-- ===== COLUMNA: COMPLETADO ===== -->
+    <div class="kanban-column">
+      <div class="kanban-column-header done">
+        <div class="column-icon"></div>
+        Completado
+        <span class="column-count" th:text="${doneTasks.size()}">0</span>
+      </div>
+
+      <div class="kanban-tasks">
+        <div th:each="task : ${doneTasks}" class="task-card">
+          <div class="task-card-header">
+            <span class="task-title" th:text="${task.title}">Tarea</span>
+            <div class="task-dropdown">
+              <button class="task-menu-btn" type="button">•••</button>
+              <div class="task-dropdown-menu">
+                <button class="task-dropdown-item"
+                        th:onclick="'openEditTask(' + ${task.id} + ',' + ${project.id} + ',\'' + ${#strings.escapeXml(task.title)} + '\',\'' + ${#strings.escapeXml(task.description)} + '\',\'' + ${task.status} + '\',\'' + ${task.priority} + '\')'">
+                  ✏️ Editar
+                </button>
+                <form th:id="'delTask-' + ${task.id}"
+                      th:action="@{/projects/{pid}/tasks/{tid}/delete(pid=${project.id},tid=${task.id})}"
+                      method="post">
+                  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                  <button type="button" class="task-dropdown-item danger"
+                          th:onclick="'confirmDelete(\'delTask-' + ${task.id} + '\')'">
+                    🗑️ Eliminar
+                  </button>
+                </form>
+                <form th:action="@{/projects/{pid}/tasks/{tid}/status(pid=${project.id},tid=${task.id})}" method="post">
+                  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                  <input type="hidden" name="status" value="IN_PROGRESS"/>
+                  <button type="submit" class="task-dropdown-item">↩️ Volver a En Proceso</button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <p class="task-desc" th:if="${!task.description.isEmpty()}" th:text="${task.description}"></p>
+
+          <div class="task-footer">
+            <span class="badge badge-done">Hecho</span>
+          </div>
+        </div>
+
+        <div th:if="${doneTasks.isEmpty()}" style="text-align:center; padding:20px 0; color:var(--text-muted); font-size:0.85rem;">
+          Sin tareas completadas
+        </div>
+      </div>
+
+      <button class="add-task-btn" onclick="openAddTask('DONE')">+ Añadir Tarea</button>
+    </div>
+
+  </div><!-- /board-container -->
+</div>
+
+<!-- ===== MODAL: ADD TASK ===== -->
+<div class="modal-backdrop" id="addTaskModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Añadir Tarea</span>
+      <button class="modal-close" onclick="closeModal('addTaskModal')">✕</button>
+    </div>
+    <form th:action="@{/projects/{id}/tasks/new(id=${project.id})}" method="post">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <div class="form-group">
+        <label class="form-label">Título *</label>
+        <input type="text" name="title" class="form-control" placeholder="Nombre de la tarea" required maxlength="200"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descripción</label>
+        <textarea name="description" class="form-control" placeholder="Detalles opcionales..." maxlength="1000"></textarea>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="form-group">
+          <label class="form-label">Columna</label>
+          <select name="status" id="newTaskStatus" class="form-control">
+            <option value="TODO">Por Hacer</option>
+            <option value="IN_PROGRESS">En Proceso</option>
+            <option value="DONE">Completado</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Prioridad</label>
+          <select name="priority" class="form-control">
+            <option value="LOW">Baja</option>
+            <option value="MEDIUM" selected>Media</option>
+            <option value="HIGH">Alta</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:8px;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('addTaskModal')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Añadir Tarea</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== MODAL: EDIT TASK ===== -->
+<div class="modal-backdrop" id="editTaskModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Editar Tarea</span>
+      <button class="modal-close" onclick="closeModal('editTaskModal')">✕</button>
+    </div>
+    <form id="editTaskForm" method="post">
+      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+      <input type="hidden" id="editTaskId" name="taskId"/>
+      <input type="hidden" id="editProjectId" name="projectId"/>
+      <div class="form-group">
+        <label class="form-label">Título *</label>
+        <input type="text" id="editTaskTitle" name="title" class="form-control" required maxlength="200"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descripción</label>
+        <textarea id="editTaskDescription" name="description" class="form-control" maxlength="1000"></textarea>
+      </div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+        <div class="form-group">
+          <label class="form-label">Estado</label>
+          <select id="editTaskStatus" name="status" class="form-control">
+            <option value="TODO">Por Hacer</option>
+            <option value="IN_PROGRESS">En Proceso</option>
+            <option value="DONE">Completado</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Prioridad</label>
+          <select id="editTaskPriority" name="priority" class="form-control">
+            <option value="LOW">Baja</option>
+            <option value="MEDIUM">Media</option>
+            <option value="HIGH">Alta</option>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:8px;">
+        <button type="button" class="btn btn-outline" onclick="closeModal('editTaskModal')">Cancelar</button>
+        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>
