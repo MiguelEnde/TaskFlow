@@ -1,6 +1,6 @@
-package com.taskflow.config;
+package com.TaskFlow.config;
 
-import com.taskflow.service.UserDetailsServiceImpl;
+import com.TaskFlow.service.UserDetailsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,7 +29,8 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/auth/**", "/css/**", "/js/**", "/h2-console/**").permitAll()
+                // PERMITIR ACCESO A IMÁGENES Y VÍDEOS
+                .requestMatchers("/auth/**", "/css/**", "/js/**", "/img/**", "/video/**", "/h2-console/**").permitAll()
                 .anyRequest().authenticated()
             )
             .formLogin(form -> form
@@ -52,7 +53,7 @@ public class SecurityConfig {
                 .ignoringRequestMatchers("/h2-console/**")
             )
             .headers(headers -> headers
-                .frameOptions(frame -> frame.sameOrigin()) // For H2 console
+                .frameOptions(frame -> frame.sameOrigin())
             );
 
         return http.build();

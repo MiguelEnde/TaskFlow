@@ -1,58 +1,247 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Iniciar Sesión – TaskFlow</title>
-  <link rel="stylesheet" th:href="@{/css/main.css}"/>
-  <link rel="stylesheet" th:href="@{/css/auth.css}"/>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>TaskFlow | Iniciar Sesión</title>
+
+    <link rel="icon" type="image/png" th:href="@{/img/TaskFLow_FAVI.png}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --card-bg: rgba(255, 255, 255, 0.85);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            transition: all 0.4s ease;
+        }
+
+        /* VIDEO */
+        #video-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 0;
+        }
+
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 1;
+        }
+
+        /* LOADER */
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: #0f172a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        .loader-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo-loader {
+            font-size: 2rem;
+            font-weight: 900;
+            background: linear-gradient(90deg, #6366f1, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: pulseLogo 1.5s infinite ease-in-out;
+        }
+
+        @keyframes pulseLogo {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.08); opacity: 0.7; }
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(255,255,255,0.1);
+            border-top: 5px solid #6366f1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* LOGIN */
+        .login-container {
+            position: relative;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(15px);
+            padding: 3rem;
+            border-radius: 32px;
+            width: 100%;
+            max-width: 400px;
+            animation: fadeInUp 0.8s ease;
+        }
+
+        .logo {
+            font-size: 2.8rem;
+            font-weight: 900;
+            text-align: center;
+            margin-bottom: 2rem;
+            background: linear-gradient(to right, #6366f1, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .form-group { margin-bottom: 1.5rem; }
+
+        .form-label {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: #475569;
+            text-transform: uppercase;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.9rem 1.2rem;
+            border-radius: 14px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-login {
+            width: 100%;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 14px;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .btn-login:hover {
+            background: var(--primary-dark);
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 14px;
+            margin-bottom: 1rem;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .alert-danger { background: #fee2e2; color: #b91c1c; }
+
+        /* SHAKE ERROR */
+        @keyframes shake {
+            0%,100%{transform:translateX(0)}
+            20%{transform:translateX(-10px)}
+            40%{transform:translateX(10px)}
+            60%{transform:translateX(-6px)}
+            80%{transform:translateX(6px)}
+        }
+
+        .shake {
+            animation: shake 0.5s;
+            border: 2px solid #ef4444;
+        }
+
+        @keyframes fadeInUp {
+            from {opacity:0; transform:translateY(30px)}
+            to {opacity:1; transform:translateY(0)}
+        }
+    </style>
 </head>
-<body class="auth-body">
 
-  <div class="auth-card">
-    <div class="auth-logo">
-      <h1>TaskFlow</h1>
+<body>
+
+<!-- LOADER -->
+<div id="loader">
+    <div class="loader-content">
+        <div class="logo-loader">TaskFlow</div>
+        <div class="spinner"></div>
     </div>
+</div>
 
-    <div th:if="${errorMsg}" class="alert alert-danger" th:text="${errorMsg}"></div>
-    <div th:if="${successMsg}" class="alert alert-success" th:text="${successMsg}"></div>
-    <div th:if="${logoutMsg}" class="alert alert-info" th:text="${logoutMsg}"></div>
+<!-- VIDEO -->
+<video autoplay muted loop playsinline id="video-bg" th:src="@{/video/flechas.mp4}"></video>
+<div class="overlay"></div>
 
-    <p class="auth-title">Iniciar Sesión</p>
+<!-- LOGIN -->
+<div class="login-container">
+    <div class="login-card">
+        <div class="logo">TaskFlow</div>
 
-    <form th:action="@{/auth/login}" method="post">
-      <div class="auth-input-group">
-        <span class="auth-input-icon">👤</span>
-        <input type="text"
-               name="username"
-               class="form-control"
-               placeholder="Ingrese su usuario"
-               required
-               autocomplete="username"/>
-      </div>
+        <div th:if="${errorMsg}" class="alert alert-danger" th:text="${errorMsg}"></div>
 
-      <div class="auth-input-group">
-        <span class="auth-input-icon">🔒</span>
-        <input type="password"
-               name="password"
-               class="form-control"
-               placeholder="Ingrese su contraseña"
-               required
-               autocomplete="current-password"/>
-      </div>
+        <form id="loginForm" th:action="@{/auth/login}" method="post">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
 
-      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+            <div class="form-group">
+                <label class="form-label">USUARIO</label>
+                <input type="text" name="username" placeholder="Usuario" class="form-control" required/>
+            </div>
 
-      <button type="submit" class="btn btn-primary btn-block btn-lg" style="margin-top: 8px;">
-        Iniciar Sesión
-      </button>
-    </form>
+            <div class="form-group">
+                <label class="form-label">CONTRASEÑA</label>
+                <input type="password" name="password" placeholder="********" class="form-control" required/>
+            </div>
 
-    <p class="auth-footer">
-      ¿No tienes cuenta? <a th:href="@{/auth/register}">Regístrate</a>
-    </p>
-  </div>
+            <button type="submit" class="btn-login">Acceder</button>
+        </form>
+    </div>
+</div>
 
-  <script th:src="@{/js/app.js}"></script>
+<script>
+    const loader = document.getElementById("loader");
+    const form = document.getElementById("loginForm");
+
+    window.addEventListener("load", () => {
+        loader.style.opacity = "0";
+        setTimeout(() => loader.style.display = "none", 500);
+
+        const error = document.querySelector(".alert-danger");
+        if (error) {
+            document.querySelector(".login-card").classList.add("shake");
+        }
+    });
+
+    form.addEventListener("submit", () => {
+        loader.style.display = "flex";
+        loader.style.opacity = "1";
+        document.querySelector(".btn-login").innerText = "Entrando...";
+    });
+</script>
+
 </body>
 </html>

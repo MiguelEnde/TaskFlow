@@ -1,4 +1,4 @@
-package com.taskflow.model;
+package com.TaskFlow.model;
 
 public enum TaskPriority {
     LOW("Baja"),

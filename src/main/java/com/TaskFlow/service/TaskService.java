@@ -1,7 +1,7 @@
-package com.taskflow.service;
+package com.TaskFlow.service;
 
-import com.taskflow.model.*;
-import com.taskflow.repository.TaskRepository;
+import com.TaskFlow.model.*;
+import com.TaskFlow.repository.TaskRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,13 +31,19 @@ public class TaskService {
         return taskRepository.save(task);
     }
 
-    public Task updateTask(Long taskId, Long projectId, String title, String description, TaskStatus status, TaskPriority priority) {
+    public Task updateTask(Long taskId, Long projectId, String title, String description, TaskStatus status, TaskPriority priority, User user) {
         Task task = taskRepository.findByIdAndProjectId(taskId, projectId)
             .orElseThrow(() -> new RuntimeException("Tarea no encontrada"));
         task.setTitle(title);
         task.setDescription(description);
         task.setStatus(status);
         task.setPriority(priority);
+        
+        // Si la tarea se marca como DONE, asignamos al usuario que lo hizo para el ranking
+        if (status == TaskStatus.DONE) {
+            task.setAssignedTo(user);
+        }
+
         return taskRepository.save(task);
     }
 

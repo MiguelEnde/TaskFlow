@@ -1,292 +1,215 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title th:text="${project.name} + ' – TaskFlow'">Proyecto – TaskFlow</title>
-  <link rel="stylesheet" th:href="@{/css/main.css}"/>
-  <link rel="stylesheet" th:href="@{/css/board.css}"/>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title th:text="${project.name} + ' | TaskFlow Board'">Board</title>
+    <link rel="icon" type="image/png" th:href="@{/img/TaskFLow_FAVI.png}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #6366f1; --primary-dark: #4f46e5; --bg: #f1f5f9; --text-main: #1e293b; --text-muted: #64748b; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg); color: var(--text-main); margin: 0; display: flex; height: 100vh; overflow: hidden; }
+
+        /* FONDO GENERAL DEL PROYECTO */
+        .main-board {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background-image: linear-gradient(rgba(241, 245, 249, 0.93), rgba(241, 245, 249, 0.93)), url("/img/fondo.png");
+            background-size: cover;
+            background-position: center;
+        }
+
+        .navbar { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); padding: 0.75rem 2rem; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; z-index: 50; }
+        .project-badge { background: #e0e7ff; color: var(--primary); padding: 4px 12px; border-radius: 6px; font-weight: 700; font-size: 0.85rem; }
+        .board-container { display: flex; gap: 1.5rem; padding: 2rem; overflow-x: auto; align-items: flex-start; flex: 1; }
+
+        /* COLUMNAS CON TRANSPARENCIA */
+        .kanban-column { background: rgba(241, 245, 249, 0.7); backdrop-filter: blur(5px); border-radius: 20px; width: 320px; min-width: 320px; display: flex; flex-direction: column; max-height: 100%; border: 1px solid rgba(255,255,255,0.4); }
+        .column-header { padding: 1.25rem; display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        .task-list { padding: 0.75rem; flex: 1; overflow-y: auto; min-height: 100px; }
+        .task-card { background: white; border-radius: 16px; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); transition: all 0.3s; border: 1px solid transparent; cursor: pointer; }
+        .task-card:hover { transform: translateY(-5px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-color: var(--primary); }
+        .task-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 0.5rem; display: block; color: #1e293b; }
+
+        /* CHAT SIDEBAR CON FONDO PERSONALIZADO */
+        .chat-sidebar { width: 350px; background: white; border-left: 1px solid #e2e8f0; display: flex; flex-direction: column; z-index: 60; }
+        .chat-header { padding: 1.25rem; border-bottom: 1px solid #e2e8f0; font-weight: 800; display: flex; justify-content: space-between; background: white; }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1.5rem 1rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            /* IMAGEN DE FONDO DEL CHAT */
+            background-image: linear-gradient(rgba(248, 250, 252, 0.9), rgba(248, 250, 252, 0.9)), url("/img/fondo.png");
+            background-size: cover;
+            background-position: center;
+        }
+
+        .message { max-width: 85%; padding: 0.75rem 1rem; border-radius: 15px; font-size: 0.85rem; line-height: 1.4; box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: relative; }
+        .message.mine { align-self: flex-end; background: var(--primary); color: white; border-bottom-right-radius: 2px; }
+        .message.others { align-self: flex-start; background: white; color: var(--text-main); border-bottom-left-radius: 2px; border: 1px solid #f1f5f9; }
+        .message-user { font-size: 0.65rem; font-weight: 800; margin-bottom: 4px; text-transform: uppercase; opacity: 0.8; letter-spacing: 0.02em; }
+
+        .chat-input-area { padding: 1.25rem; border-top: 1px solid #e2e8f0; background: white; }
+        .chat-input { width: 100%; padding: 0.8rem 1rem; border-radius: 12px; border: 1px solid #f1f5f9; background: #f8fafc; outline: none; font-family: inherit; font-size: 0.85rem; transition: all 0.2s; }
+        .chat-input:focus { border-color: var(--primary); background: white; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+
+        .btn { padding: 0.5rem 1rem; border-radius: 8px; font-weight: 700; cursor: pointer; border: none; font-family: inherit; transition: all 0.2s; }
+        .btn-invite { background: #e0e7ff; color: var(--primary); }
+        .btn-invite:hover { background: var(--primary); color: white; }
+        .btn-add { margin: 0.5rem 0.75rem 1.5rem; padding: 0.8rem; border: 2px dashed #cbd5e1; background: rgba(255,255,255,0.5); color: #64748b; border-radius: 12px; cursor: pointer; font-weight: 700; text-align: center; width: 90%; align-self: center; transition: all 0.2s; }
+        .btn-add:hover { background: white; border-color: var(--primary); color: var(--primary); }
+
+        .modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: white; border-radius: 24px; width: 450px; padding: 2.5rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+        .lang-switch { display: flex; gap: 8px; font-size: 0.7rem; }
+        .lang-switch a { text-decoration: none; color: var(--text-muted); font-weight: 800; padding: 2px 6px; border-radius: 4px; }
+        .lang-switch a:hover { background: #f1f5f9; color: var(--primary); }
+    </style>
 </head>
 <body>
-
-<!-- NAVBAR -->
-<nav class="navbar">
-  <div class="navbar-brand">
-    <span class="menu-icon">☰</span>
-    <span th:text="${project.name}">Proyecto</span>
-  </div>
-  <div class="navbar-right">
-    <a th:href="@{/dashboard}" class="btn btn-secondary btn-sm">← Dashboard</a>
-  </div>
-</nav>
-
-<!-- CONTENT -->
-<div class="main-content">
-
-  <!-- Alerts -->
-  <div th:if="${successMsg}" class="alert alert-success" th:text="${successMsg}"></div>
-
-  <!-- Kanban Board -->
-  <div class="board-container">
-
-    <!-- ===== COLUMNA: POR HACER ===== -->
-    <div class="kanban-column">
-      <div class="kanban-column-header todo">
-        <div class="column-icon"></div>
-        Por Hacer
-        <span class="column-count" th:text="${todoTasks.size()}">0</span>
-      </div>
-
-      <div class="kanban-tasks">
-        <div th:each="task : ${todoTasks}" class="task-card">
-          <div class="task-card-header">
-            <span class="task-title" th:text="${task.title}">Tarea</span>
-            <div class="task-dropdown">
-              <button class="task-menu-btn" type="button">•••</button>
-              <div class="task-dropdown-menu">
-                <button class="task-dropdown-item"
-                        th:onclick="'openEditTask(' + ${task.id} + ',' + ${project.id} + ',\'' + ${#strings.escapeXml(task.title)} + '\',\'' + ${#strings.escapeXml(task.description)} + '\',\'' + ${task.status} + '\',\'' + ${task.priority} + '\')'">
-                  ✏️ Editar
-                </button>
-                <form th:id="'delTask-' + ${task.id}"
-                      th:action="@{/projects/{pid}/tasks/{tid}/delete(pid=${project.id},tid=${task.id})}"
-                      method="post">
-                  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                  <button type="button" class="task-dropdown-item danger"
-                          th:onclick="'confirmDelete(\'delTask-' + ${task.id} + '\')'">
-                    🗑️ Eliminar
-                  </button>
-                </form>
-                <!-- Quick move to In Progress -->
-                <form th:action="@{/projects/{pid}/tasks/{tid}/status(pid=${project.id},tid=${task.id})}" method="post">
-                  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                  <input type="hidden" name="status" value="IN_PROGRESS"/>
-                  <button type="submit" class="task-dropdown-item">▶️ Mover a En Proceso</button>
-                </form>
-              </div>
+    <input type="hidden" id="projectIdValue" th:value="${project.id}"/>
+    <div class="main-board">
+        <nav class="navbar">
+            <div style="display:flex; align-items:center; gap:1.2rem;">
+                <a th:href="@{/dashboard}" style="text-decoration:none; font-size: 1.4rem;">🏠</a>
+                <span class="project-badge" th:text="${project.name}">Proyecto</span>
+                <button class="btn btn-invite" onclick="openModal('inviteModal')" th:text="'👥 ' + #{invite.btn}">Invitar</button>
             </div>
-          </div>
-
-          <p class="task-desc" th:if="${!task.description.isEmpty()}" th:text="${task.description}"></p>
-
-          <div class="task-footer">
-            <span class="badge"
-                  th:classappend="${task.priority.name() == 'HIGH' ? 'badge-high' : (task.priority.name() == 'MEDIUM' ? 'badge-medium' : 'badge-low')}"
-                  th:text="${task.priority.displayName} + ' Prioridad'">Media</span>
-          </div>
-        </div>
-
-        <div th:if="${todoTasks.isEmpty()}" style="text-align:center; padding:20px 0; color:var(--text-muted); font-size:0.85rem;">
-          Sin tareas
-        </div>
-      </div>
-
-      <button class="add-task-btn" onclick="openAddTask('TODO')">+ Añadir Tarea</button>
-    </div>
-
-    <!-- ===== COLUMNA: EN PROCESO ===== -->
-    <div class="kanban-column">
-      <div class="kanban-column-header inprogress">
-        <div class="column-icon"></div>
-        En Proceso
-        <span class="column-count" th:text="${inProgressTasks.size()}">0</span>
-      </div>
-
-      <div class="kanban-tasks">
-        <div th:each="task : ${inProgressTasks}" class="task-card">
-          <div class="task-card-header">
-            <span class="task-title" th:text="${task.title}">Tarea</span>
-            <div class="task-dropdown">
-              <button class="task-menu-btn" type="button">•••</button>
-              <div class="task-dropdown-menu">
-                <button class="task-dropdown-item"
-                        th:onclick="'openEditTask(' + ${task.id} + ',' + ${project.id} + ',\'' + ${#strings.escapeXml(task.title)} + '\',\'' + ${#strings.escapeXml(task.description)} + '\',\'' + ${task.status} + '\',\'' + ${task.priority} + '\')'">
-                  ✏️ Editar
-                </button>
-                <form th:id="'delTask-' + ${task.id}"
-                      th:action="@{/projects/{pid}/tasks/{tid}/delete(pid=${project.id},tid=${task.id})}"
-                      method="post">
-                  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                  <button type="button" class="task-dropdown-item danger"
-                          th:onclick="'confirmDelete(\'delTask-' + ${task.id} + '\')'">
-                    🗑️ Eliminar
-                  </button>
-                </form>
-                <form th:action="@{/projects/{pid}/tasks/{tid}/status(pid=${project.id},tid=${task.id})}" method="post">
-                  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                  <input type="hidden" name="status" value="DONE"/>
-                  <button type="submit" class="task-dropdown-item">✅ Marcar Completado</button>
-                </form>
-                <form th:action="@{/projects/{pid}/tasks/{tid}/status(pid=${project.id},tid=${task.id})}" method="post">
-                  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                  <input type="hidden" name="status" value="TODO"/>
-                  <button type="submit" class="task-dropdown-item">↩️ Volver a Por Hacer</button>
-                </form>
-              </div>
+            <div style="display: flex; align-items: center; gap: 2rem;">
+                <div style="font-size:0.75rem; color:#64748b; font-weight:700;">
+                    <span th:text="#{project.members}">COLABORADORES:</span> <span th:each="m : ${project.members}" th:text="${m.displayName} + ' '"></span>
+                </div>
+                <div class="lang-switch">
+                    <a th:href="@{'/projects/' + ${project.id}(lang='es')}">ES</a> |
+                    <a th:href="@{'/projects/' + ${project.id}(lang='en')}">EN</a>
+                </div>
             </div>
-          </div>
-
-          <p class="task-desc" th:if="${!task.description.isEmpty()}" th:text="${task.description}"></p>
-
-          <div class="task-footer">
-            <span class="badge badge-high" th:if="${task.priority.name() == 'HIGH'}">Alta Prioridad</span>
-            <span class="badge badge-medium" th:if="${task.priority.name() == 'MEDIUM'}">Media Prioridad</span>
-            <span class="badge badge-low" th:if="${task.priority.name() == 'LOW'}">Baja Prioridad</span>
-            <span class="priority-star" th:if="${task.priority.name() == 'HIGH'}">★</span>
-          </div>
-        </div>
-
-        <div th:if="${inProgressTasks.isEmpty()}" style="text-align:center; padding:20px 0; color:var(--text-muted); font-size:0.85rem;">
-          Sin tareas
-        </div>
-      </div>
-
-      <button class="add-task-btn" onclick="openAddTask('IN_PROGRESS')">+ Añadir Tarea</button>
-    </div>
-
-    <!-- ===== COLUMNA: COMPLETADO ===== -->
-    <div class="kanban-column">
-      <div class="kanban-column-header done">
-        <div class="column-icon"></div>
-        Completado
-        <span class="column-count" th:text="${doneTasks.size()}">0</span>
-      </div>
-
-      <div class="kanban-tasks">
-        <div th:each="task : ${doneTasks}" class="task-card">
-          <div class="task-card-header">
-            <span class="task-title" th:text="${task.title}">Tarea</span>
-            <div class="task-dropdown">
-              <button class="task-menu-btn" type="button">•••</button>
-              <div class="task-dropdown-menu">
-                <button class="task-dropdown-item"
-                        th:onclick="'openEditTask(' + ${task.id} + ',' + ${project.id} + ',\'' + ${#strings.escapeXml(task.title)} + '\',\'' + ${#strings.escapeXml(task.description)} + '\',\'' + ${task.status} + '\',\'' + ${task.priority} + '\')'">
-                  ✏️ Editar
-                </button>
-                <form th:id="'delTask-' + ${task.id}"
-                      th:action="@{/projects/{pid}/tasks/{tid}/delete(pid=${project.id},tid=${task.id})}"
-                      method="post">
-                  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                  <button type="button" class="task-dropdown-item danger"
-                          th:onclick="'confirmDelete(\'delTask-' + ${task.id} + '\')'">
-                    🗑️ Eliminar
-                  </button>
-                </form>
-                <form th:action="@{/projects/{pid}/tasks/{tid}/status(pid=${project.id},tid=${task.id})}" method="post">
-                  <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-                  <input type="hidden" name="status" value="IN_PROGRESS"/>
-                  <button type="submit" class="task-dropdown-item">↩️ Volver a En Proceso</button>
-                </form>
-              </div>
+        </nav>
+        <div class="board-container">
+            <div th:each="col : ${ {'TODO', 'IN_PROGRESS', 'DONE'} }" class="kanban-column">
+                <div class="column-header">
+                    <span th:text="#{${'task.status.' + col.toLowerCase()}}">COL</span>
+                    <span style="background:var(--primary); padding:2px 10px; border-radius:99px; font-size:0.7rem; color:white;"
+                          th:text="${col == 'TODO' ? todoTasks.size() : (col == 'IN_PROGRESS' ? inProgressTasks.size() : doneTasks.size())}">0</span>
+                </div>
+                <div class="task-list">
+                    <div th:each="task : ${col == 'TODO' ? todoTasks : (col == 'IN_PROGRESS' ? inProgressTasks : doneTasks)}" class="task-card"
+                         th:data-id="${task.id}" th:data-title="${task.title}" th:data-status="${task.status}" th:data-priority="${task.priority}" onclick="openEditModal(this)">
+                        <span class="task-title" th:text="${task.title}">Título</span>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:0.8rem;">
+                            <span style="font-size:0.65rem; font-weight:900; color:var(--primary); text-transform:uppercase;"
+                                  th:text="#{${'task.priority.' + task.priority.name().toLowerCase()}}"></span>
+                            <span style="font-size:0.65rem; color:#94a3b8; font-weight:600;" th:text="'#' + ${task.id}"></span>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn-add" th:data-col="${col}" onclick="openAddModal(this.getAttribute('data-col'))">+ <span th:text="#{modal.add}">Tarea</span></button>
             </div>
-          </div>
-
-          <p class="task-desc" th:if="${!task.description.isEmpty()}" th:text="${task.description}"></p>
-
-          <div class="task-footer">
-            <span class="badge badge-done">Hecho</span>
-          </div>
         </div>
-
-        <div th:if="${doneTasks.isEmpty()}" style="text-align:center; padding:20px 0; color:var(--text-muted); font-size:0.85rem;">
-          Sin tareas completadas
-        </div>
-      </div>
-
-      <button class="add-task-btn" onclick="openAddTask('DONE')">+ Añadir Tarea</button>
     </div>
-
-  </div><!-- /board-container -->
-</div>
-
-<!-- ===== MODAL: ADD TASK ===== -->
-<div class="modal-backdrop" id="addTaskModal">
-  <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title">Añadir Tarea</span>
-      <button class="modal-close" onclick="closeModal('addTaskModal')">✕</button>
+    <div class="chat-sidebar">
+        <div class="chat-header">
+            <span th:text="#{project.chat_channel}">Canal</span>
+            <span style="font-size:0.6rem; background:#10b981; color:white; padding:2px 8px; border-radius:6px; font-weight:800;">LIVE</span>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div th:each="msg : ${messages}" class="message" th:classappend="${msg.sender.username == user.username ? 'mine' : 'others'}">
+                <div class="message-user" th:text="${msg.sender.displayName}">Nombre</div>
+                <div th:text="${msg.content}">Mensaje</div>
+            </div>
+        </div>
+        <div class="chat-input-area">
+            <form th:action="@{'/projects/' + ${project.id} + '/chat/send'}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <input type="text" name="content" class="chat-input" th:placeholder="#{project.write_team}" autocomplete="off"/>
+            </form>
+        </div>
     </div>
-    <form th:action="@{/projects/{id}/tasks/new(id=${project.id})}" method="post">
-      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-      <div class="form-group">
-        <label class="form-label">Título *</label>
-        <input type="text" name="title" class="form-control" placeholder="Nombre de la tarea" required maxlength="200"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Descripción</label>
-        <textarea name="description" class="form-control" placeholder="Detalles opcionales..." maxlength="1000"></textarea>
-      </div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-        <div class="form-group">
-          <label class="form-label">Columna</label>
-          <select name="status" id="newTaskStatus" class="form-control">
-            <option value="TODO">Por Hacer</option>
-            <option value="IN_PROGRESS">En Proceso</option>
-            <option value="DONE">Completado</option>
-          </select>
+    <!-- MODALES -->
+    <div class="modal-backdrop" id="taskModal">
+        <div class="modal-content">
+            <h2 id="modalTitle" style="margin-top:0; font-weight:900; color:#1e293b;" th:text="#{modal.task.title}">Tarea</h2>
+            <form id="taskForm" method="post" style="margin-top:1.5rem;">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <div style="margin-bottom:1.25rem;">
+                    <label style="font-weight:800; font-size:0.7rem; color:#64748b; text-transform:uppercase; letter-spacing:0.05em;" th:text="#{table.col.task}">TÍTULO</label>
+                    <input type="text" id="formTitle" name="title" style="width:100%; padding:0.85rem; border:1px solid #e2e8f0; border-radius:12px; margin-top:0.4rem;" required/>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:2rem;">
+                    <div>
+                        <label style="font-weight:800; font-size:0.7rem; color:#64748b; text-transform:uppercase;" th:text="#{table.col.status}">ESTADO</label>
+                        <select id="formStatus" name="status" style="width:100%; padding:0.85rem; border:1px solid #e2e8f0; border-radius:12px; margin-top:0.4rem;">
+                            <option value="TODO" th:text="#{task.status.todo}"></option>
+                            <option value="IN_PROGRESS" th:text="#{task.status.in_progress}"></option>
+                            <option value="DONE" th:text="#{task.status.done}"></option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-weight:800; font-size:0.7rem; color:#64748b; text-transform:uppercase;" th:text="#{table.col.priority}">PRIORIDAD</label>
+                        <select id="formPriority" name="priority" style="width:100%; padding:0.85rem; border:1px solid #e2e8f0; border-radius:12px; margin-top:0.4rem;">
+                            <option value="LOW" th:text="#{task.priority.low}"></option>
+                            <option value="MEDIUM" th:text="#{task.priority.medium}"></option>
+                            <option value="HIGH" th:text="#{task.priority.high}"></option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:flex; gap:12px;">
+                    <button type="button" onclick="closeModal('taskModal')" style="flex:1; padding:1rem; border-radius:14px; background:#f1f5f9; cursor:pointer; font-weight:800; border:none; color:#64748b;" th:text="#{modal.cancel}"></button>
+                    <button type="submit" style="flex:2; padding:1rem; border-radius:14px; background:var(--primary); color:white; font-weight:800; cursor:pointer; border:none; box-shadow:0 4px 10px rgba(99, 102, 241, 0.3);" th:text="#{modal.add}">Guardar</button>
+                </div>
+            </form>
         </div>
-        <div class="form-group">
-          <label class="form-label">Prioridad</label>
-          <select name="priority" class="form-control">
-            <option value="LOW">Baja</option>
-            <option value="MEDIUM" selected>Media</option>
-            <option value="HIGH">Alta</option>
-          </select>
-        </div>
-      </div>
-      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:8px;">
-        <button type="button" class="btn btn-outline" onclick="closeModal('addTaskModal')">Cancelar</button>
-        <button type="submit" class="btn btn-primary">Añadir Tarea</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<!-- ===== MODAL: EDIT TASK ===== -->
-<div class="modal-backdrop" id="editTaskModal">
-  <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title">Editar Tarea</span>
-      <button class="modal-close" onclick="closeModal('editTaskModal')">✕</button>
     </div>
-    <form id="editTaskForm" method="post">
-      <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
-      <input type="hidden" id="editTaskId" name="taskId"/>
-      <input type="hidden" id="editProjectId" name="projectId"/>
-      <div class="form-group">
-        <label class="form-label">Título *</label>
-        <input type="text" id="editTaskTitle" name="title" class="form-control" required maxlength="200"/>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Descripción</label>
-        <textarea id="editTaskDescription" name="description" class="form-control" maxlength="1000"></textarea>
-      </div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-        <div class="form-group">
-          <label class="form-label">Estado</label>
-          <select id="editTaskStatus" name="status" class="form-control">
-            <option value="TODO">Por Hacer</option>
-            <option value="IN_PROGRESS">En Proceso</option>
-            <option value="DONE">Completado</option>
-          </select>
+    <div class="modal-backdrop" id="inviteModal">
+        <div class="modal-content" style="width:380px;">
+            <h3 style="margin-top:0; font-weight:900;" th:text="#{invite.title}">Invitar</h3>
+            <form th:action="@{'/projects/' + ${project.id} + '/invite'}" method="post" style="margin-top:1.5rem;">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                <div th:if="${#lists.isEmpty(potentialMembers)}" style="color: #64748b; margin-bottom: 1.5rem; font-size: 0.85rem; font-weight:600;" th:text="#{invite.none}"></div>
+                <div th:if="${not #lists.isEmpty(potentialMembers)}">
+                    <label style="font-weight:800; font-size:0.7rem; color:#64748b; text-transform:uppercase; display: block; margin-bottom: 0.5rem;" th:text="#{invite.select}"></label>
+                    <select name="username" style="width:100%; padding:0.85rem; border:1px solid #e2e8f0; border-radius:12px; margin-bottom:2rem;" required>
+                        <option value="" th:text="#{invite.select} + '...'"></option>
+                        <option th:each="u : ${potentialMembers}" th:value="${u.username}" th:text="${u.displayName} + ' (@' + ${u.username} + ')'"></option>
+                    </select>
+                </div>
+                <div style="display:flex; gap:12px;">
+                    <button type="button" onclick="closeModal('inviteModal')" style="flex:1; border:none; background:#f1f5f9; padding:1rem; border-radius:14px; cursor:pointer; font-weight:800; color:#64748b;" th:text="#{modal.cancel}"></button>
+                    <button th:if="${not #lists.isEmpty(potentialMembers)}" type="submit" style="flex:1; background:var(--primary); color:white; border:none; border-radius:14px; font-weight:800; cursor:pointer; box-shadow:0 4px 10px rgba(99, 102, 241, 0.3);" th:text="#{invite.btn}"></button>
+                </div>
+            </form>
         </div>
-        <div class="form-group">
-          <label class="form-label">Prioridad</label>
-          <select id="editTaskPriority" name="priority" class="form-control">
-            <option value="LOW">Baja</option>
-            <option value="MEDIUM">Media</option>
-            <option value="HIGH">Alta</option>
-          </select>
-        </div>
-      </div>
-      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:8px;">
-        <button type="button" class="btn btn-outline" onclick="closeModal('editTaskModal')">Cancelar</button>
-        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<script th:src="@{/js/app.js}"></script>
+    </div>
+    <script th:inline="javascript">
+        const project_id = document.getElementById('projectIdValue').value;
+        const taskModal = document.getElementById('taskModal');
+        const taskForm = document.getElementById('taskForm');
+        const taskTitleNew = [[#{modal.task.title}]];
+        function openAddModal(status) {
+            document.getElementById('modalTitle').innerText = taskTitleNew;
+            document.getElementById('formTitle').value = '';
+            document.getElementById('formStatus').value = status;
+            taskForm.action = '/projects/' + project_id + '/tasks/new';
+            taskModal.style.display = 'flex';
+        }
+        function openEditModal(card) {
+            document.getElementById('modalTitle').innerText = taskTitleNew;
+            document.getElementById('formTitle').value = card.getAttribute('data-title');
+            document.getElementById('formStatus').value = card.getAttribute('data-status');
+            taskForm.action = '/projects/' + project_id + '/tasks/' + card.getAttribute('data-id') + '/edit';
+            taskModal.style.display = 'flex';
+        }
+        function openModal(id) { document.getElementById(id).style.display = 'flex'; }
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        const chat = document.getElementById('chatMessages');
+        chat.scrollTop = chat.scrollHeight;
+    </script>
 </body>
 </html>

@@ -1,7 +1,7 @@
-package com.taskflow.service;
+package com.TaskFlow.service;
 
-import com.taskflow.model.User;
-import com.taskflow.repository.UserRepository;
+import com.TaskFlow.model.User;
+import com.TaskFlow.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.*;
 import org.springframework.stereotype.Service;

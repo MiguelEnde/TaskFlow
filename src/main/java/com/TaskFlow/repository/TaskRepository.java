@@ -1,8 +1,8 @@
-package com.taskflow.repository;
+package com.TaskFlow.repository;
 
-import com.taskflow.model.Task;
-import com.taskflow.model.TaskStatus;
-import com.taskflow.model.Project;
+import com.TaskFlow.model.Task;
+import com.TaskFlow.model.TaskStatus;
+import com.TaskFlow.model.Project;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

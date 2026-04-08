@@ -1,6 +1,6 @@
-package com.taskflow.repository;
+package com.TaskFlow.repository;
 
-import com.taskflow.model.User;
+import com.TaskFlow.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
